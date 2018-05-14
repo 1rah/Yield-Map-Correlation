@@ -1,0 +1,15 @@
+<PAMDataset>
+  <Metadata>
+    <MDI key="COLORSPACE">GREYSCALE</MDI>
+    <MDI key="COMPRESSION_RATE_TARGET">1</MDI>
+    <MDI key="VERSION">1</MDI>
+  </Metadata>
+  <PAMRasterBand band="1">
+    <Metadata>
+      <MDI key="STATISTICS_MAXIMUM">0.1843137294054</MDI>
+      <MDI key="STATISTICS_MEAN">0.057587464811183</MDI>
+      <MDI key="STATISTICS_MINIMUM">-0.019607843831182</MDI>
+      <MDI key="STATISTICS_STDDEV">0.043752957030426</MDI>
+    </Metadata>
+  </PAMRasterBand>
+</PAMDataset>
