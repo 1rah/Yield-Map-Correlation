@@ -132,13 +132,24 @@ ri = np.linspace(np.min(df_ndre.y), np.max(df_ndre.y),800)
 #out = pd.DataFrame(out)
 
 df = df_yield
-~a * (df['x'], df['y'])
+df['col'], df['row'] = ~a * (df['UTM_Easting'], df['UTM_Northing'])
 
 
 plt.figure()
 plt.gca().invert_yaxis()
 
-c_data = df_yield.col
-r_data = df_yield.row
+c_data = df.col
+r_data = df.row
 plt.scatter(c_data, r_data)
 plt.show()
+
+
+
+ci = np.arange(406)
+ri = np.arange(800)
+c,r,z = df.col, df.row, df['Cotton Yield']
+zi = griddata((c, r), z, (ci[None,:], ri[:,None]), method='linear')
+plt.contourf(ci,ri,zi,15,cmap=plt.cm.jet)
+
+
+plt.imshow(np.where(ndre_array>0,zi,np.nan))
