@@ -1,3 +1,10 @@
+#input files
+Terraidi_field_CSV Points Cotton Yield/
+Terraidi_NDRE_raster_gray/
+Terraidi_NDRE_rasters/
+Terraidi_NDRE_rasters-processed/
+Terraidi_same_date_comparison/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
