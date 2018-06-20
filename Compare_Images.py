@@ -25,11 +25,10 @@ from scipy import ndimage
 gdal.UseExceptions()
 
 
-
-
 tif_plane_path = r'D:\Yield-Map-Correlation\Terraidi_same_date_comparison\20171219T000000_HIRAMS_PLN_ndre_gray_not_corrected.float.tif'
 tif_satt_path = r'D:\Yield-Map-Correlation\Terraidi_same_date_comparison\20171219T001059_T55JGH_S2B_ndre_gray.float.tif'
 csv_path = r'D:\Yield-Map-Correlation\Terraidi_same_date_comparison\Terraidi_field3_Exported CSV Points Cotton Yield.CSV'
+
 
 with rasterio.open(tif_plane_path) as tif:
 #    a = affine.Affine.from_gdal(*tif.transform)
