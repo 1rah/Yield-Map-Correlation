@@ -47,11 +47,6 @@ def filter_low(a):
 #    upr_mean = np.mean(a_nonan[a_nonan > upr])
     a = np.where(a>upr, np.nan, a)
     
-    
-    
-#    a = a - a.min()
-#    a = a / a.max()
-    
     return a
 
 
