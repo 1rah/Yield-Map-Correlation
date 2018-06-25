@@ -11,13 +11,15 @@ import matplotlib.pyplot as plt
 import rasterio as rio
 
 import numpy as np
-import utm
+#import utm
 import re
 from scipy.interpolate import griddata
 import affine
 
 from skimage.transform import resize
-from sklearn.metrics import r2_score
+#from sklearn.metrics import r2_score
+
+import argparse
 
 ## HELPER FUNCTIONS
 
@@ -98,7 +100,6 @@ def main_func(**args):
     new_img_array, new_affine = rescale_to_gsd(img_array, img_affine, usr_gsd)
     
     
-    
     #open csv
     #! NOTE: Assume yield csv has headings: Easting, Northing, Yield and is same CRS as the image (UTM)
     names="easting northing yield".split()
@@ -114,9 +115,10 @@ def main_func(**args):
     # interpolate csv data to the img grid
     yield_grid = interpolate_df_to_img_grid(df, new_img_array)
     
+    
     if filter_data:
-        yield_grid_filt = filter_low(yield_grid)
-        new_img_array_filt = filter_low(new_img_array)
+        yield_grid_filt = filter_low(yield_grid, pval)
+        new_img_array_filt = filter_low(new_img_array, pval)
     else:
         def zero_filter(a): return np.where(a==0, np.nan, a)
         yield_grid_filt = zero_filter(yield_grid)
@@ -128,8 +130,18 @@ def main_func(**args):
     
     # filter out nan values - based on filter_low()
     f = (~np.isnan(yield_grid_filt)) & (~np.isnan(new_img_array_filt))
-
-
+    
+    
+    # calc the correlation coeff
+    img_corr_coef = np.corrcoef(
+            yield_grid[f].flatten(),
+            new_img_array[f].flatten(),
+            )
+    
+    # set filter values to 0
+#    yield_grid = np.where(new_img_array == 0, 0, yield_grid)
+#    yield_grid = np.where(np.isnan(yield_grid), 0, yield_grid)
+    yield_grid = np.where(f, yield_grid, 0)
     
     out = dict()
     out.update({
@@ -137,10 +149,8 @@ def main_func(**args):
             'df':df,
             'yield_grid':yield_grid,
             'val_filter':f,
-#            'yield_fit':yield_fit,
-#            'img_correlation_coeff':img_corr_coef,
-#            'fit_correlation_coeff':fit_corr_coef,
-#            'fit_r_squared_score':fit_r_squared,
+            'img_corr_coef':img_corr_coef,
+            'new_affine':new_affine,
             })
     
     return out
@@ -158,66 +168,62 @@ if __name__ == '__main__':
     tif_path = r'D:\Yield-Map-Correlation\Terraidi_NDRE_rasters\20180212T001111_T55JGH_S2A_ndre_gray.float.tif'
     csv_path = r'D:\Yield-Map-Correlation\Terraidi_field_CSV Points Cotton Yield\Terraidi_field1_Exported CSV Points Cotton Yield.CSV'
     
+    
+    out_path = r'D:\Yield-Map-Correlation\test.tif'
+    
     usr_gsd = 20
     bins = 50
     rebin_data = True
-    filter_data = True
     show_plots = True
+    filter_data = True
+    pval = 3
+    write_out = True
     
     o = main_func(
             tif_path = tif_path,
             csv_path = csv_path,
-            usr_gsd = 20,
-            bins = 50,
-            rebin_data = True,
-            filter_data = True,
+            usr_gsd = usr_gsd,
+            bins = bins,
+            rebin_data = rebin_data,
+            filter_data = filter_data,
+            pval = pval,
             )
     
     new_img_array = o['new_img_array']
     df = o['df']
     yield_grid = o['yield_grid']
     f = o['val_filter']
-#    y2 = o['yield_fit']
-#    icc = o['img_correlation_coeff'] 
-#    fcc = o['fit_correlation_coeff'] 
-#    fr2 = o['fit_r_squared_score']
-    
-    
-    def norm_array(a,f=f): return a #return (a - a[f].min()) / a[f].max()
-    yield_grid = norm_array(yield_grid)
-    new_img_array = norm_array(new_img_array)
+    img_corr_coeff = o['img_corr_coef']
+    new_affine = o['new_affine']
 
-    x = new_img_array[f].flatten()[:,np.newaxis]
-    y = (yield_grid[f].flatten()) #fit
-    yield_fit, _, _, _ = np.linalg.lstsq(x, y)
+    print('correlation coefficient =',img_corr_coeff[0,1])
+
     
-    img_corr_coef = np.corrcoef(
-            yield_grid[f].flatten(),
-            new_img_array[f].flatten(),
-            )
-    
-    #use fit / model to predict yield
-    pred = (yield_fit * new_img_array[f]) #fit
-    
-    fit_r_squared = r2_score(
-            yield_grid[f],
-            pred,
-            )
-    fit_corr_coef = np.corrcoef(
-            yield_grid[f].flatten(),
-            pred,
-            )
-    
-    
+    if write_out:
+        with rio.open(tif_path) as img:
+            profile = img.profile.copy()
+            t = img.affine.to_gdal()
+        
+        profile.update({'transform':t})
+        profile.update({'affine':new_affine})
+        h, w = yield_grid.shape
+        profile.update({'height':h})
+        profile.update({'width':w})
+        
+        with rio.open(out_path, 'w', **profile) as dst:
+            def norm(a): return (a - a.min()) / a.max()
+            yield_grid = norm(yield_grid)
+            dst.write( np.array(yield_grid, dtype = profile['dtype']), 1)
+
     if show_plots:
         plt.figure()
-        plt.tight_layout()
+#        plt.tight_layout()
         
         class next_subplot:
             def __init__(self):
                 self.i=1
             def step(self):
-                plt.subplot(3,2,self.i)
+                plt.subplot(1,4,self.i)
                 self.i+=1
         
         ns = next_subplot()
@@ -230,24 +236,90 @@ if __name__ == '__main__':
         ns.step()
         plt.imshow(yield_grid)
         plt.scatter(df.col, df.row)
-
+        
         ns.step()
         plt.scatter( new_img_array[f].flatten(), yield_grid[f].flatten() )
-        x = np.linspace(0, new_img_array[f].max(), 20)
-        plt.plot(x, (yield_fit*x)) #fit
-        
+        plt.xlabel('image px values')
+        plt.ylabel('avg yield per px')
+
+
+## TODO: FOR FUTURE REF - used for calculating index - yield transformation
+    
+#    new_img_array = o['new_img_array']
+#    df = o['df']
+#    yield_grid = o['yield_grid']
+#    f = o['val_filter']
+##    y2 = o['yield_fit']
+##    icc = o['img_correlation_coeff'] 
+##    fcc = o['fit_correlation_coeff'] 
+##    fr2 = o['fit_r_squared_score']
+#    
+#    
+#    def norm_array(a,f=f): return a #return (a - a[f].min()) / a[f].max()
+#    yield_grid = norm_array(yield_grid)
+#    new_img_array = norm_array(new_img_array)
+#
+#    x = new_img_array[f].flatten()[:,np.newaxis]
+#    y = (yield_grid[f].flatten()) #fit
+#    yield_fit, _, _, _ = np.linalg.lstsq(x, y)
+#    
+#    img_corr_coef = np.corrcoef(
+#            yield_grid[f].flatten(),
+#            new_img_array[f].flatten(),
+#            )
+#    
+#    #use fit / model to predict yield
+#    pred = (yield_fit * new_img_array[f]) #fit
+#    
+#    fit_r_squared = r2_score(
+#            yield_grid[f],
+#            pred,
+#            )
+#    fit_corr_coef = np.corrcoef(
+#            yield_grid[f].flatten(),
+#            pred,
+#            )
+#    
+#    
+#    if show_plots:
 #        plt.figure()
-#        plt.hist(yield_grid[f].flatten(), bins=bins)
-#        plt.hist((new_img_array[f].flatten()), bins=bins)
-        
-        print(img_corr_coef,'\n\n',fit_corr_coef, fit_r_squared)
-        
-        
-        ##print(np.corrcoef(zi[f].flatten(), new_img_array[f].flatten()) )
-        #print(np.corrcoef(zi[f].flatten(), (new_img_array[f].flatten())) )
-        #print(r2_score(zi[f], (y2*new_img_array[f])))
-        #
-        #
-        #plt.figure()
-        #interp_yield = np.where(np.isnan(img_array), np.nan, np.sqrt(y2*img_array))
-        #plt.imshow(interp_yield)
+#        plt.tight_layout()
+#        
+#        class next_subplot:
+#            def __init__(self):
+#                self.i=1
+#            def step(self):
+#                plt.subplot(3,2,self.i)
+#                self.i+=1
+#        
+#        ns = next_subplot()
+#        ns.step()
+#        plt.imshow(new_img_array)
+#        
+#        ns.step()
+#        plt.imshow(yield_grid)
+#        
+#        ns.step()
+#        plt.imshow(yield_grid)
+#        plt.scatter(df.col, df.row)
+#
+#        ns.step()
+#        plt.scatter( new_img_array[f].flatten(), yield_grid[f].flatten() )
+#        x = np.linspace(0, new_img_array[f].max(), 20)
+#        plt.plot(x, (yield_fit*x)) #fit
+#        
+##        plt.figure()
+##        plt.hist(yield_grid[f].flatten(), bins=bins)
+##        plt.hist((new_img_array[f].flatten()), bins=bins)
+#        
+#        print(img_corr_coef,'\n\n',fit_corr_coef, fit_r_squared)
+#        
+#        
+#        ##print(np.corrcoef(zi[f].flatten(), new_img_array[f].flatten()) )
+#        #print(np.corrcoef(zi[f].flatten(), (new_img_array[f].flatten())) )
+#        #print(r2_score(zi[f], (y2*new_img_array[f])))
+#        #
+#        #
+#        #plt.figure()
+#        #interp_yield = np.where(np.isnan(img_array), np.nan, np.sqrt(y2*img_array))
+#        #plt.imshow(interp_yield)
