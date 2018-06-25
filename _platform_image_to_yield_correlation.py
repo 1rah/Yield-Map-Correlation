@@ -117,37 +117,39 @@ def main_func(**args):
     if filter_data:
         yield_grid_filt = filter_low(yield_grid)
         new_img_array_filt = filter_low(new_img_array)
+    else:
+        def zero_filter(a): return np.where(a==0, np.nan, a)
+        yield_grid_filt = zero_filter(yield_grid)
+        new_img_array_filt = zero_filter(new_img_array)
     
     if rebin_data:
         yield_grid_filt = rebin(yield_grid_filt, bins)
         new_img_array_filt = rebin(new_img_array_filt, bins)
     
-    # include only non-fltered values in comparisons
+    # filter out nan values - based on filter_low()
     f = (~np.isnan(yield_grid_filt)) & (~np.isnan(new_img_array_filt))
 
-    def norm_array(a,f=f):
-        return (a - a[f].min()) / a[f].max()
-    
+    def norm_array(a,f=f): return a #return (a - a[f].min()) / a[f].max()
     yield_grid_norm = norm_array(yield_grid)
     new_img_array_norm = norm_array(new_img_array)
 
-    x = new_img_array[f].flatten()[:,np.newaxis]
-    yield_fit, _, _, _ = np.linalg.lstsq(x, (yield_grid[f].flatten()) )
+    x = new_img_array_norm[f].flatten()[:,np.newaxis]
+    yield_fit, _, _, _ = np.linalg.lstsq(x, (yield_grid_norm[f].flatten()) )
     
     img_corr_coef = np.corrcoef(
-            yield_grid[f].flatten(),
-            new_img_array[f].flatten(),
+            yield_grid_norm[f].flatten(),
+            new_img_array_norm[f].flatten(),
             )
     
     #use fit / model to predict yield
     pred = yield_fit * new_img_array[f]
     
     fit_r_squared = r2_score(
-            yield_grid[f],
+            yield_grid_norm[f],
             pred,
             )
     fit_corr_coef = np.corrcoef(
-            yield_grid[f].flatten(),
+            yield_grid_norm[f].flatten(),
             pred,
             )
     
