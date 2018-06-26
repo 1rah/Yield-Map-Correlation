@@ -199,7 +199,7 @@ if __name__ == '__main__':
         write_out = True
         out_path = args.out_path
     
-    rebin_data = True
+    rebin_data = False
     bins = 50
     filter_data = False
     pval = 3
