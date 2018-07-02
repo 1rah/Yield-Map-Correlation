@@ -52,8 +52,10 @@ if __name__ == '__main__':
     width = right-left
     height = bottom-top
     
-    cols = np.arange(math.ceil(width/20))
-    rows = np.arange(math.ceil(height/20))
+    n_cols = math.ceil(width/20)
+    n_rows = math.ceil(height/20)
+    
+    #left bounds= left + n_cols*20
     
     
     
