@@ -38,7 +38,7 @@ def get_features(layer):
         ftr = json.loads(ftr.ExportToJson())
         lng, lat = ftr['geometry']['coordinates']
         yld = ftr['properties']['Dry_Yield']
-        if yld > 0:
+        if yld and yld > 0:
             p = get_utm(lat, lng)
             p.update({
                     'longitude':lng,
@@ -86,7 +86,7 @@ def main(
         plt.scatter(df.easting, df.northing)
         plt.show()
     
-    df['easting northing yield'.split()].to_csv(csvfile)
+    df['easting northing yield epsg_code'.split()].to_csv(csvfile)
     
 
 
@@ -102,13 +102,24 @@ if __name__ == '__main__':
     parser.add_argument('-show_plot', action='store_true', help='use swith to show plots')
     
     args = parser.parse_args()
-    print(args)
+#    print(args)
+    
+    shapefile = args.shapefile
+    csvfile = args.csvfile
+    if args.kmlfile:
+        kmlfile = args.kmlfile[0]
+    else:
+        kmlfile = None
+    print_epsg = args.print_epsg
+    show_plot = args.show_plot
+    
+    
     main(
-        args.shapefile,
-        args.csvfile,
-        args.kmlfile[0],
-        args.print_epsg,
-        args.show_plot,
+        shapefile,
+        csvfile,
+        kmlfile,
+        print_epsg,
+        show_plot,
         )
 
 
