@@ -19,24 +19,64 @@ from scipy.interpolate import griddata
 import affine
 import argparse
 import math
+import re
+import geopandas as gpd
+import fiona
+import utm
+fiona.drvsupport.supported_drivers['kml'] = 'rw' # enable KML support which is disabled by default
+fiona.drvsupport.supported_drivers['KML'] = 'rw' # enable KML support which is disabled by default
+
+def bound_to_utm(bnds):
+    lng1, lat1, lng2, lat2 = bnds
+    
+    u1 = utm.from_latlon(lat1, lng1)
+    u2 = utm.from_latlon(lat2, lng2)
+    if u1[-2:] != u2[-2:]:
+        raise Exception('geometry split across multiple UTM zones')
+    
+    letter = u1[-1]
+    zone = u1[-2]
+    # get reference zone
+    if letter in 'CDEFGHJKLM':
+        new_crs = 32700 + zone
+    else:
+        assert letter in 'NPQRSTUVWXX'
+        new_crs = 32600 + zone
+    
+    return new_crs
+
 
 def main_func(
-        csv_file = r'D:\Steve_SA_winter_2017 Yield Data\sample2.csv',
-        out_tiff = r'D:\Steve_SA_winter_2017 Yield Data\test.tiff',
+        csv_file = r'D:\Yield-Map-Correlation\inputs\Terraidi_field1_Exported CSV Points Cotton Yield.csv',
+        out_tiff = r'D:\Yield-Map-Correlation\inputs\Terraidi_field1_Exported CSV Points Cotton Yield.tif',
         gsd = 10,
         show_plot = False,
         normalise = False,
         print_minmax = True,
+        kml_file =  r'D:\Yield-Map-Correlation\inputs\G & C Houston - Terriadi - 1.kml'
         ):
     
     print(locals())
     print(csv_file)
     #open csv
-    df = pd.read_csv(csv_file)   
+    df = pd.read_csv(csv_file)
+    k = list(df.keys())
+    inorth =[i for i,kn in enumerate(k) if re.search('north', kn, re.IGNORECASE)]
+    ieast = [i for i,kn in enumerate(k) if re.search('east', kn, re.IGNORECASE)]
+    iyield = [i for i,kn in enumerate(k) if re.search('yield', kn, re.IGNORECASE)]
+    if not 1 == len(inorth) == len(ieast) == len(iyield) and not len(set(inorth+ieast+iyield)) == 3:
+        raise TypeError('CSV file must contain a single column for each of yield, northing, easting')
+    df['yield'] = df.iloc[:,iyield[0]]
+    df['easting'] = df.iloc[:,ieast[0]]
+    df['northing'] = df.iloc[:,inorth[0]]
+    
     max_yield = df['yield'].max()
     min_yield = df['yield'].min()
     left, right = df['easting'].min(), df['easting'].max()
     top, bottom = df['northing'].min(), df['northing'].max()
+    
+    kf = gpd.read_file(kml_file)
+    epsg_n = bound_to_utm(kf.bounds.values[0])
     
     #normalise to 255 get UTM (return mapping in metadata)
     if normalise == True:
@@ -57,6 +97,7 @@ def main_func(
     #generate raster data
     a = affine.Affine(gsd,0,left,0,-gsd,bottom)
     df['row'], df['col'] = ~a * (df['easting'], df['northing'])
+    print(df)
     ci = np.arange(math.ceil(df['row'].max()))
     ri = np.arange(math.ceil(df['col'].max()))
     c,r,z = df['row'], df['col'], df['px']

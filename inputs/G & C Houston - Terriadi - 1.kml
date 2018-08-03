@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="OGRGeoJSON" id="OGRGeoJSON">
+	<SimpleField name="property_id" type="int"></SimpleField>
+	<SimpleField name="property_name" type="string"></SimpleField>
+	<SimpleField name="paddock_id" type="int"></SimpleField>
+	<SimpleField name="paddock_name" type="string"></SimpleField>
+	<SimpleField name="area" type="string"></SimpleField>
+	<SimpleField name="season_id" type="int"></SimpleField>
+	<SimpleField name="season_name" type="string"></SimpleField>
+	<SimpleField name="crop_id" type="int"></SimpleField>
+	<SimpleField name="crop_name" type="string"></SimpleField>
+	<SimpleField name="variety_id" type="int"></SimpleField>
+	<SimpleField name="variety_name" type="string"></SimpleField>
+	<SimpleField name="title" type="string"></SimpleField>
+	<SimpleField name="stroke" type="string"></SimpleField>
+	<SimpleField name="stroke-width" type="string"></SimpleField>
+	<SimpleField name="marker-size" type="string"></SimpleField>
+	<SimpleField name="fill" type="string"></SimpleField>
+	<SimpleField name="fill-opacity" type="float"></SimpleField>
+</Schema>
+<Folder><name>OGRGeoJSON</name>
+  <Placemark>
+	<name>1</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#OGRGeoJSON">
+		<SimpleData name="property_id">1113</SimpleData>
+		<SimpleData name="property_name">Terriadi</SimpleData>
+		<SimpleData name="paddock_id">11323</SimpleData>
+		<SimpleData name="paddock_name">1</SimpleData>
+		<SimpleData name="area">59.5 ha</SimpleData>
+		<SimpleData name="season_id">91599</SimpleData>
+		<SimpleData name="season_name">2017-18 Summer</SimpleData>
+		<SimpleData name="crop_id">30049</SimpleData>
+		<SimpleData name="crop_name">Cotton</SimpleData>
+		<SimpleData name="variety_id">3529</SimpleData>
+		<SimpleData name="variety_name">Sicot 746B3F</SimpleData>
+		<SimpleData name="title">1</SimpleData>
+		<SimpleData name="stroke">#078023</SimpleData>
+		<SimpleData name="stroke-width">1</SimpleData>
+		<SimpleData name="marker-size">medium</SimpleData>
+		<SimpleData name="fill">#078023</SimpleData>
+		<SimpleData name="fill-opacity">0.8</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>149.20087,-29.01918 149.20085,-29.01931 149.20151,-29.02194 149.20161,-29.02211 149.20177,-29.0222 149.20268,-29.02614 149.20363,-29.02978 149.20372,-29.03006 149.20802,-29.02925 149.20705,-29.02531 149.20738,-29.02523 149.20645,-29.02124 149.20654,-29.02121 149.20755,-29.02099 149.20677,-29.01803 149.20087,-29.01918</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>
